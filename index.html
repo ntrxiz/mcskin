@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTRXI - Skin Search & Availability</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --input: #2a2a2a;
+            --accent: #00b894;
+            --danger: #d63031;
+            --text-main: #ecf0f1;
+            --text-muted: #95a5a6;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- HEADER --- */
+        header {
+            background: #191919;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+
+        .brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: -1px;
+        }
+        .brand span { color: var(--accent); }
+
+        /* --- SEARCH HERO --- */
+        .search-hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: radial-gradient(circle at center, #252525 0%, #121212 70%);
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 18px 25px;
+            padding-right: 60px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            border: 2px solid #333;
+            background: var(--input);
+            color: white;
+            outline: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: 0.3s;
+            box-sizing: border-box; /* Fix padding overflow */
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 184, 148, 0.2);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #000;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .search-btn:hover { transform: translateY(-50%) scale(1.1); }
+
+        /* --- RESULTS GRID --- */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex: 1;
+            display: none; /* Hidden by default */
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        /* LEFT: SKIN PREVIEW */
+        .skin-card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        .skin-render {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+
+        .download-btn {
+            display: block;
+            margin-top: 20px;
+            background: #2d3436;
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .download-btn:hover { background: #333; color: var(--accent); }
+
+        /* RIGHT: INFO */
+        .info-card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #333;
+        }
+
+        .username-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .username-header h1 { margin: 0; font-size: 2.5rem; }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .status-taken { background: rgba(214, 48, 49, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .status-free { background: rgba(0, 184, 148, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .data-label { color: var(--text-muted); }
+        .data-value { font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        .copy-icon {
+            cursor: pointer;
+            color: #555;
+            margin-left: 10px;
+            transition: 0.2s;
+        }
+        .copy-icon:hover { color: var(--accent); }
+
+        /* LOADING & ERROR STATES */
+        .state-msg {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #888;
+            margin-top: 50px;
+        }
+        .error-msg { color: var(--danger); }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .profile-grid { grid-template-columns: 1fr; }
+            .skin-card { display: flex; flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="#" class="brand">NTRXI <span>SKINS</span></a>
+</header>
+
+<section class="search-hero">
+    <h1>Check Availability & Skins</h1>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Enter username..." onkeypress="handleEnter(event)">
+        <button class="search-btn" onclick="fetchProfile()"><i class="fas fa-search"></i></button>
+    </div>
+    <div id="loader" class="state-msg" style="display: none;">Searching the database...</div>
+    <div id="errorBox" class="state-msg error-msg" style="display: none;"></div>
+</section>
+
+<div class="container" id="resultContainer">
+    <div class="profile-grid">
+        <div class="skin-card">
+            <h3 style="color:#888; margin-top:0;">Current Skin</h3>
+            <img id="skinImg" class="skin-render" src="" alt="Skin Render">
+            
+            <a id="downloadLink" href="#" class="download-btn" target="_blank" download>
+                <i class="fas fa-download"></i> Download Texture
+            </a>
+            <a id="namemcLink" href="#" class="download-btn" target="_blank" style="margin-top: 10px;">
+                <i class="fas fa-external-link-alt"></i> View on NameMC
+            </a>
+        </div>
+
+        <div class="info-card">
+            <div class="username-header">
+                <h1 id="displayUsername">Steve</h1>
+                <span id="statusBadge" class="status-badge status-taken">Taken</span>
+            </div>
+
+            <div class="data-row">
+                <span class="data-label">Status</span>
+                <span id="availabilityText" class="data-value" style="color:var(--danger)">Unavailable</span>
+            </div>
+
+            <div class="data-row">
+                <span class="data-label">UUID</span>
+                <div style="display:flex; align-items:center;">
+                    <span id="uuidDisplay" class="data-value">...</span>
+                    <i class="fas fa-copy copy-icon" onclick="copyToClipboard('uuidDisplay')" title="Copy UUID"></i>
+                </div>
+            </div>
+
+            <div class="data-row">
+                <span class="data-label">Skin Type</span>
+                <span id="skinType" class="data-value">Classic (Steve)</span>
+            </div>
+
+            <div class="data-row">
+                <span class="data-label">Account Created</span>
+                <span id="accountCreated" class="data-value">Unknown</span>
+            </div>
+            
+            <div class="data-row" style="border:none; padding-top: 20px;">
+                 <span class="data-label" style="font-size: 0.8rem;">* Availability is estimated. Banned names cannot be detected.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- CORE LOGIC ---
+const API_URL = "https://api.ashcon.app/mojang/v2/user/";
+
+function handleEnter(e) {
+    if (e.key === 'Enter') fetchProfile();
+}
+
+async function fetchProfile() {
+    const input = document.getElementById('searchInput').value.trim();
+    const loader = document.getElementById('loader');
+    const container = document.getElementById('resultContainer');
+    const errorBox = document.getElementById('errorBox');
+    
+    if (!input) return;
+
+    // Reset UI
+    container.style.display = 'none';
+    errorBox.style.display = 'none';
+    loader.style.display = 'block';
+
+    try {
+        const response = await fetch(API_URL + input);
+        
+        if (response.status === 404) {
+            // USER NOT FOUND = AVAILABLE
+            showAvailable(input);
+        } else if (response.status === 200) {
+            // USER FOUND = TAKEN
+            const data = await response.json();
+            showProfile(data);
+        } else {
+            throw new Error("API Error");
+        }
+    } catch (err) {
+        loader.style.display = 'none';
+        errorBox.textContent = "Error: API Rate limit or Network issue. Try again in 5s.";
+        errorBox.style.display = 'block';
+    }
+}
+
+function showAvailable(name) {
+    const loader = document.getElementById('loader');
+    const container = document.getElementById('resultContainer');
+    
+    loader.style.display = 'none';
+    container.style.display = 'block';
+
+    // Set Data
+    document.getElementById('displayUsername').textContent = name;
+    document.getElementById('displayUsername').style.color = "#00b894";
+    
+    const badge = document.getElementById('statusBadge');
+    badge.className = "status-badge status-free";
+    badge.textContent = "Available";
+
+    document.getElementById('availabilityText').textContent = "Likely Available";
+    document.getElementById('availabilityText').style.color = "#00b894";
+
+    document.getElementById('uuidDisplay').textContent = "N/A";
+    document.getElementById('skinType').textContent = "N/A";
+    document.getElementById('accountCreated').textContent = "N/A";
+
+    // Set Default Steve Skin
+    document.getElementById('skinImg').src = "https://visage.surgeplay.com/full/832/X-Steve";
+    document.getElementById('downloadLink').style.display = 'none';
+    document.getElementById('namemcLink').style.display = 'none';
+}
+
+function showProfile(data) {
+    const loader = document.getElementById('loader');
+    const container = document.getElementById('resultContainer');
+    
+    loader.style.display = 'none';
+    container.style.display = 'block';
+
+    // 1. Basic Info
+    document.getElementById('displayUsername').textContent = data.username;
+    document.getElementById('displayUsername').style.color = "#fff";
+    
+    const badge = document.getElementById('statusBadge');
+    badge.className = "status-badge status-taken";
+    badge.textContent = "Taken";
+
+    document.getElementById('availabilityText').textContent = "Unavailable";
+    document.getElementById('availabilityText').style.color = "#d63031";
+
+    document.getElementById('uuidDisplay').textContent = data.uuid;
+    
+    // 2. Skin Logic
+    const skinUrl = data.textures.skin.url;
+    const isSlim = data.textures.skin.slim;
+    
+    document.getElementById('skinType').textContent = isSlim ? "Slim (Alex)" : "Classic (Steve)";
+    
+    // Use Visage API for high-quality 3D render (Front view)
+    // Fallback to Crafatar if slow
+    document.getElementById('skinImg').src = `https://visage.surgeplay.com/full/512/${data.uuid}`;
+    
+    // 3. Buttons
+    const dlLink = document.getElementById('downloadLink');
+    dlLink.href = skinUrl;
+    dlLink.style.display = 'block';
+
+    const nmLink = document.getElementById('namemcLink');
+    nmLink.href = `https://namemc.com/profile/${data.uuid}`;
+    nmLink.style.display = 'block';
+
+    // 4. Creation Date (Ashcon API sometimes provides created_at)
+    if (data.created_at) {
+        const date = new Date(data.created_at);
+        document.getElementById('accountCreated').textContent = date.toLocaleDateString();
+    } else {
+        document.getElementById('accountCreated').textContent = "Unknown (Legacy Account)";
+    }
+}
+
+function copyToClipboard(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    if (text === "N/A") return;
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard: " + text);
+}
+</script>
+
+</body>
+</html>
